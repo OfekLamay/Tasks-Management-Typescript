@@ -1,6 +1,16 @@
-const mongoose = require('mongoose');
+import mongoose, { Schema, Document } from 'mongoose';
 
-const taskSchema = new mongoose.Schema({
+export interface ITask extends Document {
+    id: number;
+    name: string;
+    userRelated: string;
+    description: string;
+    isDone: boolean;
+    teamNumber: number;
+    isPrivate: boolean;
+}
+
+const taskSchema = new Schema<ITask>({
     id: { type: Number, required: true },
     name: { type: String, required: true },
     userRelated: { type: String, required: true },
@@ -10,4 +20,4 @@ const taskSchema = new mongoose.Schema({
     isPrivate: { type: Boolean, default: false } 
 });
 
-module.exports = mongoose.model('Task', taskSchema);
+export default mongoose.model<ITask>('Task', taskSchema);
