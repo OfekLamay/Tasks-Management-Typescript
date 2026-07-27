@@ -1,25 +1,26 @@
-import { useState } from 'react'
-import './App.css'
+import React from 'react';
+import './App.css';
+import { Route, Routes } from 'react-router-dom';
 
-function App() {
-  const [count, setCount] = useState(0)
+import Home from './components/Home';
+import Tasks from './components/Tasks';
+import NewTask from './components/NewTask';
+import NotFound from './components/NotFound';
+import Users from './components/Users';
 
+const App: React.FC = () => {
   return (
-    <>
-      <section id="center">
-        
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <div className="App">
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/tasks' element={<Tasks />} />
+        <Route path='/newTask' element={<NewTask />} />
+        <Route path='/users' element={<Users />} />
+        {/* All other undefined routes */}
+        <Route path='*' element={<NotFound />} />
+      </Routes>
+    </div>
+  );
 }
 
-export default App
+export default App;
