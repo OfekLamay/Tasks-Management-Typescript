@@ -9,7 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Provider store={store}>
-      <BrowserRouter basename="/Tasks-Management">
+      <BrowserRouter>
         <App />
       </BrowserRouter>
     </Provider>
