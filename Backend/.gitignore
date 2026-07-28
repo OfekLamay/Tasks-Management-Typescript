@@ -1,5 +1,8 @@
 node_modules
-dist
-dist-ssr
-/generated/prisma
+build
 .env
+server.log
+scripts/
+Backup
+bootstrapFromScratch.ts
+databaseInsertions.ts

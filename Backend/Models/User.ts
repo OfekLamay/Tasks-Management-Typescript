@@ -5,8 +5,8 @@ export interface IUser extends Document {
     password?: string;
     email?: string;
     googleId?: string;
-    teams: number[];
-    role: 'admin' | 'manager' | 'user';
+    teamNumber: number;
+    role: 'admin' | 'manager' | 'user' | 'guest';
 }
 
 const userSchema = new Schema<IUser>({
@@ -14,8 +14,8 @@ const userSchema = new Schema<IUser>({
     password: { type: String }, 
     email: { type: String, unique: true, sparse: true }, 
     googleId: { type: String, unique: true, sparse: true }, 
-    teams: { type: [Number], default: [] }, 
-    role: { type: String, enum: ['admin', 'manager', 'user'], default: 'user' }
+    teamNumber: { type: Number, default: -1 },
+    role: { type: String, enum: ['admin', 'manager', 'user', 'guest'], default: 'user' }
 });
 
 export default mongoose.model<IUser>('User', userSchema);
