@@ -1,6 +1,5 @@
-import React from 'react'
-import TaskPreview from './TaskPreview'
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import TaskPreview from './TaskPreview';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux'; 
 import { setTasks, removeTask, type ITask } from '../redux/tasksSlice';
@@ -8,32 +7,58 @@ import { type RootState } from '../redux/store';
 import TimedModal from './TimedModal';
 import NavBar from './NavBar';
 
+type TaskViewType = 'all' | 'user' | 'history';
+const TASKS_LIMIT = 5;
+
 const Tasks: React.FC = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  
   const currentUser = useSelector((state: RootState) => state.user.username);
+  const teamNumber = useSelector((state: RootState) => state.user.teamNumber);
   const tasks = useSelector((state: RootState) => state.tasks);
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [noHistoryOpen, setNoHistoryOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true);
+  const [noHistoryOpen, setNoHistoryOpen] = useState(false);
+  
+  // Pagination & View States
+  const [currentView, setCurrentView] = useState<TaskViewType>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Server interaction functions ----------------------------------------------------
+  const fetchTasks = useCallback(async (view: TaskViewType, pageToFetch: number) => {
+    setIsLoading(true);
+    let endpoint = '/api/tasks';
+    if (view === 'user') endpoint = '/api/user-tasks';
+    if (view === 'history') endpoint = '/api/tasks-history';
 
-  const showAllTasks = useCallback(async () => {
-    const response = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUser })
-    });
-    const data = await response.json();
-    dispatch(setTasks(data));
-    setIsLoading(false);
-  }, [currentUser, dispatch]);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser, teamNumber, page: pageToFetch, limit: TASKS_LIMIT })
+      });
+      const data = await response.json();
 
-  // Run once in dev despite StrictMode double-invoking effects
+      if (data.tasks) {
+        dispatch(setTasks(data.tasks));
+        setCurrentPage(data.currentPage);
+        setTotalPages(data.totalPages);
+        
+        if (data.tasks.length === 0 && view === 'history' && pageToFetch === 1) {
+          setNoHistoryOpen(true);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch tasks:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser, teamNumber, dispatch]);
+
   const ranOnceRef = useRef(false);
   useEffect(() => {
-    if (ranOnceRef.current) return;   // <-- prevents double execution in dev
+    if (ranOnceRef.current) return;
     ranOnceRef.current = true;
 
     if (currentUser === 'NotLoggedIn') {
@@ -41,35 +66,19 @@ const Tasks: React.FC = () => {
       navigate('/');
       return;
     }
-    showAllTasks();
-  }, [currentUser, navigate, showAllTasks]);
+    fetchTasks('all', 1);
+  }, [currentUser, navigate, fetchTasks]);
 
-  const showUserTasks = async () => {
-    await fetch('/api/user-tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUser })
-    })
-    .then(response => response.json())
-    .then(data => dispatch(setTasks(data)))
-  }
+  // Frontend interactions
+  const handleViewChange = (view: TaskViewType) => {
+    setCurrentView(view);
+    fetchTasks(view, 1); 
+  };
 
-  const showTasksHistory = async () => {
-    await fetch('/api/tasks-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUser })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.length === 0) setNoHistoryOpen(true); 
-      else dispatch(setTasks(data))
-    })
-  }
-
-  // Frontend interaction functions ----------------------------------------------------
-
-  const removeTaskFromState = (id: number) => dispatch(removeTask(id));
+  const removeTaskFromState = (id: number) => {
+    dispatch(removeTask(id));
+    fetchTasks(currentView, currentPage);
+  };
 
   return (
     <div className="tasks-bg">
@@ -77,11 +86,10 @@ const Tasks: React.FC = () => {
         <NavBar />
         <h2 style={{textAlign: 'center'}}>Hello {currentUser}!</h2>
 
-        {/* Task action buttons (moved below navbar) */}
         <div className='tasksActionsBar'>
-          <div className='optionDiv' onClick={showUserTasks}>Show my tasks</div>
-            <div className='optionDiv' onClick={showAllTasks}>Show all tasks</div>
-          <div className='optionDiv' onClick={showTasksHistory}>Tasks history</div>
+          <div className={`optionDiv ${currentView === 'user' ? 'active' : ''}`} onClick={() => handleViewChange('user')}>Show my tasks</div>
+          <div className={`optionDiv ${currentView === 'all' ? 'active' : ''}`} onClick={() => handleViewChange('all')}>Show all tasks</div>
+          <div className={`optionDiv ${currentView === 'history' ? 'active' : ''}`} onClick={() => handleViewChange('history')}>Tasks history</div>
         </div>
 
         <div className='flexboxContainerTasks'>
@@ -89,8 +97,29 @@ const Tasks: React.FC = () => {
             <TaskPreview key={`task-${task.id}`} updateTasks={removeTaskFromState} taskData={task} />
           ))}
           {isLoading ? <div className='tasksMessage'>Loading tasks...</div> : null}
-          {tasks.length === 0 && !isLoading ? <div id='noTasksLeft' className='tasksMessage'>ALL TASKS ARE DONE!</div> : null}
+          {tasks.length === 0 && !isLoading ? <div id='noTasksLeft' className='tasksMessage'>NO TASKS FOUND</div> : null}
         </div>
+
+        {/* Pagination Controls */}
+        {!isLoading && totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+            <button 
+              className='clickbtn' 
+              style={{ width: 'auto', padding: '5px 15px', margin: 0 }}
+              disabled={currentPage <= 1} 
+              onClick={() => fetchTasks(currentView, currentPage - 1)}>
+              Prev
+            </button>
+            <span style={{ fontWeight: 'bold' }}>Page {currentPage} of {totalPages}</span>
+            <button 
+              className='clickbtn' 
+              style={{ width: 'auto', padding: '5px 15px', margin: 0 }}
+              disabled={currentPage >= totalPages} 
+              onClick={() => fetchTasks(currentView, currentPage + 1)}>
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       <TimedModal
@@ -104,4 +133,4 @@ const Tasks: React.FC = () => {
   )
 }
 
-export default Tasks
+export default Tasks;

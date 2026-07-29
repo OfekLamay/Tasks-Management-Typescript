@@ -6,24 +6,35 @@ import logger from '../logger';
 
 const router = express.Router();
 
+const TASKS_LIMIT = 5;
+
 router.post('/tasks', async (req: Request, res: Response) => {
     try {
-        const { username } = req.body;
+        const { username, teamNumber, page = 1, limit = TASKS_LIMIT } = req.body;
+        const skip = (page - 1) * limit;
+
         const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
         if (!userGroup) {
             res.status(400).json({ error: "User not found" });
             return;
         }
 
-        const teamTasks = await Task.find({
-            teamNumber: userGroup.teamNumber,
+        const query = {
+            teamNumber: teamNumber,
             $or: [
                 { isPrivate: { $ne: true } }, 
                 { isPrivate: true, userRelated: username }
             ]
-        }, { _id: 0, __v: 0 });
+        };
 
-        res.json(teamTasks);
+        const totalCount = await Task.countDocuments(query);
+        const teamTasks = await Task.find(query, { _id: 0, __v: 0 }).skip(skip).limit(limit);
+
+        res.json({
+            tasks: teamTasks,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit) || 1
+        });
     } catch (err: any) {
         logger.error({ message: 'Error in /tasks', error: err.message });
         res.status(500).json({ error: 'Server error' });
@@ -32,22 +43,31 @@ router.post('/tasks', async (req: Request, res: Response) => {
 
 router.post('/tasks-history', async (req: Request, res: Response) => {
     try {
-        const { username } = req.body;
+        const { username, teamNumber, page = 1, limit = TASKS_LIMIT } = req.body;
+        const skip = (page - 1) * limit;
+
         const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
         if (!userGroup) {
             res.status(400).json({ error: "User not found" });
             return;
         }
 
-        const tasksHistory = await TasksHistory.find({
-            teamNumber: userGroup.teamNumber,
+        const query = {
+            teamNumber: teamNumber,
             $or: [
                 { isPrivate: { $ne: true } }, 
                 { isPrivate: true, userRelated: username }
             ]
-        }, { _id: 0, __v: 0 });
+        };
 
-        res.json(tasksHistory);
+        const totalCount = await TasksHistory.countDocuments(query);
+        const tasksHistory = await TasksHistory.find(query, { _id: 0, __v: 0 }).skip(skip).limit(limit);
+
+        res.json({
+            tasks: tasksHistory,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit) || 1
+        });
     } catch (err: any) {
         logger.error({ message: 'Error in /tasks-history', error: err.message });
         res.status(500).json({ error: 'Server error' });
@@ -56,9 +76,19 @@ router.post('/tasks-history', async (req: Request, res: Response) => {
 
 router.post('/user-tasks', async (req: Request, res: Response) => {
     try {
-        const { username } = req.body;
-        const userTasks = await Task.find({ userRelated: username }, { _id: 0, __v: 0 });
-        res.json(userTasks);
+        const { username, teamNumber, page = 1, limit = TASKS_LIMIT } = req.body;
+        const skip = (page - 1) * limit;
+
+        const query = { userRelated: username, teamNumber: teamNumber };
+
+        const totalCount = await Task.countDocuments(query);
+        const userTasks = await Task.find(query, { _id: 0, __v: 0 }).skip(skip).limit(limit);
+
+        res.json({
+            tasks: userTasks,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit) || 1
+        });
     } catch (err: any) {
         logger.error({ message: 'Error in /user-tasks', error: err.message });
         res.status(500).json({ error: 'Server error' });
