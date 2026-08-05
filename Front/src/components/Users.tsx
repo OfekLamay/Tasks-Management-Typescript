@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { type RootState } from '../redux/store';
 import NavBar from './NavBar';
 import UserPreview from './UserPreview';
-import {type IUser} from '../redux/userSlice';
+import { type IUser } from '../redux/userSlice';
 
 const Users: React.FC = () => {
   const navigate = useNavigate();
@@ -15,24 +15,41 @@ const Users: React.FC = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadUsers = useCallback(async () => {
-    // Admin sees all users (without passwords) via /api/users-only
-    // Others see only their team via /api/team-users-only
-    if (role === 'admin') {
-      const res = await fetch('/api/users-only');
-      const data = await res.json();
-      setUsers(data || []);
-    } else {
-      const res = await fetch('/api/team-users-only', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: currentUser })
-      });
-      const data = await res.json();
-      setUsers(data || []);
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const USERS_LIMIT = 5;
+
+  const loadUsers = useCallback(async (pageToFetch: number = 1) => {
+    setIsLoading(true);
+    try {
+      if (role === 'admin') {
+        const res = await fetch(`/api/users-only?page=${pageToFetch}&limit=${USERS_LIMIT}`);
+        const data = await res.json();
+        if (data.users) {
+            setUsers(data.users);
+            setCurrentPage(data.currentPage);
+            setTotalPages(data.totalPages);
+        }
+      } else {
+        const res = await fetch('/api/team-users-only', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: currentUser, page: pageToFetch, limit: USERS_LIMIT })
+        });
+        const data = await res.json();
+        if (data.users) {
+            setUsers(data.users);
+            setCurrentPage(data.currentPage);
+            setTotalPages(data.totalPages);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [currentUser, role]);
+  }, [currentUser, role, USERS_LIMIT]);
 
   const ranOnce = useRef(false);
   useEffect(() => {
@@ -44,7 +61,7 @@ const Users: React.FC = () => {
       navigate('/');
       return;
     }
-    loadUsers();
+    loadUsers(1);
   }, [currentUser, navigate, loadUsers]);
 
   return (
@@ -68,12 +85,33 @@ const Users: React.FC = () => {
             <UserPreview
               key={`user-${u.username}`}
               userData={u}
-              onRefresh={loadUsers}   // <-- pass refresh callback
+              onRefresh={() => loadUsers(currentPage)}
             />
           ))}
           {isLoading ? <div className='usersMessage'>Loading users...</div> : null}
           {!isLoading && users.length === 0 ? <div className='usersMessage'>No users found</div> : null}
         </div>
+
+        {/* Pagination Controls */}
+        {!isLoading && totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+            <button 
+              className='clickbtn' 
+              style={{ width: 'auto', padding: '5px 15px', margin: 0 }}
+              disabled={currentPage <= 1} 
+              onClick={() => loadUsers(currentPage - 1)}>
+              Prev
+            </button>
+            <span style={{ fontWeight: 'bold' }}>Page {currentPage} of {totalPages}</span>
+            <button 
+              className='clickbtn' 
+              style={{ width: 'auto', padding: '5px 15px', margin: 0 }}
+              disabled={currentPage >= totalPages} 
+              onClick={() => loadUsers(currentPage + 1)}>
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

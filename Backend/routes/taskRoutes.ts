@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import Task from '../Models/Task';
 import TasksHistory from '../Models/TasksHistory';
 import User from '../Models/User';
+import Counter from '../Models/Counter';
 import logger from '../logger';
 
 const router = express.Router();
@@ -117,10 +118,6 @@ router.post('/add-task', async (req: Request, res: Response) => {
         return;
     }
 
-    const tasksCount = await Task.countDocuments();
-    const historyCount = await TasksHistory.countDocuments();
-    const latestTaskID = tasksCount + historyCount + 1;
-
     const resTask = await Task.findOne({ name: tName, userRelated: tUserRelated, description: tDes, teamNumber: targetTeam });
     
     if (resTask) {
@@ -128,17 +125,32 @@ router.post('/add-task', async (req: Request, res: Response) => {
         return;
     }
 
-    await Task.create({
-        id: latestTaskID,
-        name: tName,
-        userRelated: tUserRelated,
-        description: tDes,
-        isDone: false,
-        teamNumber: targetTeam,
-        isPrivate: isPrivate || false 
-    });
+    try {
+        const counter = await Counter.findOneAndUpdate(
+            { id: 'taskId' },
+            { $inc: { seq: 1 } },
+            { returnDocument: 'after', upsert: true }
+        );
 
-    res.json({ isAdded: true, message: "Task added!" });
+        if (!counter) {
+            throw new Error("Failed to generate task ID");
+        }
+
+        await Task.create({
+            id: counter.seq,
+            name: tName,
+            userRelated: tUserRelated,
+            description: tDes,
+            isDone: false,
+            teamNumber: targetTeam,
+            isPrivate: isPrivate || false 
+        });
+
+        res.json({ isAdded: true, message: "Task added!" });
+    } catch (error) {
+        logger.error({ message: 'Error creating task with atomic counter', error });
+        res.status(500).json({ isAdded: false, message: "Server error creating task." });
+    }
 });
 
 router.post('/end-task', async (req: Request, res: Response) => {

@@ -5,6 +5,8 @@ import logger from '../logger';
 
 const router = express.Router();
 
+const USERS_LIMIT = 5;
+
 router.post('/login', async (req: Request, res: Response) => {
     const uDetails = req.body;
     const user = await User.findOne({ username: uDetails.uName });
@@ -27,8 +29,18 @@ router.post('/login', async (req: Request, res: Response) => {
 
 router.get('/users', async (req: Request, res: Response) => {
     try {
-        const users = await User.find({}, { _id: 0, __v: 0 });
-        res.json(users);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || USERS_LIMIT;
+        const skip = (page - 1) * limit;
+
+        const totalCount = await User.countDocuments({});
+        const users = await User.find({}, { _id: 0, __v: 0 }).skip(skip).limit(limit);
+
+        res.json({
+            users,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit) || 1
+        });
     } catch (err: any) {
         logger.error({ message: 'Error in /users', error: err.message });
         res.status(500).json({ error: 'Server error' });
@@ -37,8 +49,18 @@ router.get('/users', async (req: Request, res: Response) => {
 
 router.get('/users-only', async (req: Request, res: Response) => {
     try {
-        const users = await User.find({}, { password: 0, _id: 0, __v: 0 });
-        res.json(users);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || USERS_LIMIT;
+        const skip = (page - 1) * limit;
+
+        const totalCount = await User.countDocuments({});
+        const users = await User.find({}, { password: 0, _id: 0, __v: 0 }).skip(skip).limit(limit);
+
+        res.json({
+            users,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit) || 1
+        });
     } catch (err: any) {
         logger.error({ message: 'Error in /users-only', error: err.message });
         res.status(500).json({ error: 'Server error' });
@@ -47,17 +69,25 @@ router.get('/users-only', async (req: Request, res: Response) => {
 
 router.post('/team-users-only', async (req: Request, res: Response) => {
     try {
-        const uDetails = req.body;
-        const userGroup = await User.findOne({ username: uDetails.username }, { _id: 0, __v: 0, password: 0 });
+        const { username, page = 1, limit = USERS_LIMIT } = req.body;
+        const skip = (page - 1) * limit;
+
+        const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
         
         if (!userGroup) {
             res.status(400).json({ error: "User not found" });
             return;
         }
 
-        const groupUsers = await User.find({ teamNumber: userGroup.teamNumber }, { password: 0, _id: 0, __v: 0 });
+        const query = { teamNumber: userGroup.teamNumber };
+        const totalCount = await User.countDocuments(query);
+        const groupUsers = await User.find(query, { password: 0, _id: 0, __v: 0 }).skip(skip).limit(limit);
         
-        res.json(groupUsers);
+        res.json({
+            users: groupUsers,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit) || 1
+        });
     } catch (err: any) {
         logger.error({ message: 'Error in /team-users-only', error: err.message });
         res.status(500).json({ error: 'Server error' });

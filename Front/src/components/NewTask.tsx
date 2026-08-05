@@ -25,10 +25,16 @@ const NewTask: React.FC = () => {
         fetch('/api/team-users-only', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser })
+            body: JSON.stringify({ username: currentUser, page: 1, limit: 1000 })
         })
         .then(response => response.json())
-        .then(data => setUsers(data));
+        .then(data => {
+            if (data.users) {
+                setUsers(data.users);
+            } else {
+                setUsers([]);
+            }
+        });
     }, [currentUser, navigate]);
 
     const createTask = () => {
