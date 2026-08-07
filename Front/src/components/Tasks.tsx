@@ -28,19 +28,22 @@ const Tasks: React.FC = () => {
 
   const fetchTasks = useCallback(async (view: TaskViewType, pageToFetch: number) => {
     setIsLoading(true);
-    let endpoint = '/api/tasks';
-    if (view === 'user') endpoint = '/api/user-tasks';
-    if (view === 'history') endpoint = '/api/tasks-history';
+
+    let baseEndpoint = '/api/tasks';
+    if (view === 'user') baseEndpoint = '/api/user-tasks';
+    if (view === 'history') baseEndpoint = '/api/tasks-history';
+
+    const endpoint = `${baseEndpoint}?page=${pageToFetch}&limit=${TASKS_LIMIT}`;
 
     try {
       const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: currentUser, teamNumber, page: pageToFetch, limit: TASKS_LIMIT })
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
+      
       const data = await response.json();
 
-      if (data.tasks) {
+      if (response.ok && data.tasks) {
         dispatch(setTasks(data.tasks));
         setCurrentPage(data.currentPage);
         setTotalPages(data.totalPages);
@@ -48,13 +51,15 @@ const Tasks: React.FC = () => {
         if (data.tasks.length === 0 && view === 'history' && pageToFetch === 1) {
           setNoHistoryOpen(true);
         }
+      } else {
+        console.error("Server returned an error:", data.message || data.error);
       }
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, teamNumber, dispatch]);
+  }, [dispatch]);
 
   const ranOnceRef = useRef(false);
   useEffect(() => {

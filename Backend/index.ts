@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import logger from './logger';
 
 import Task from './Models/Task';
@@ -18,6 +19,7 @@ const PORT = 3001;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 mongoose.set('strictQuery', false);
 

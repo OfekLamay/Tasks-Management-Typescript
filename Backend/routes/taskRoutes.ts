@@ -4,14 +4,27 @@ import TasksHistory from '../Models/TasksHistory';
 import User from '../Models/User';
 import Counter from '../Models/Counter';
 import logger from '../logger';
+import { verifyToken, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
+router.use(verifyToken);
 
 const TASKS_LIMIT = 5;
 
-router.post('/tasks', async (req: Request, res: Response) => {
+
+router.get('/tasks', async (req: AuthRequest, res: Response) => {
     try {
-        const { username, teamNumber, page = 1, limit = TASKS_LIMIT } = req.body;
+        const username = req.user?.username;
+        const teamNumber = req.user?.teamNumber;
+
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || TASKS_LIMIT;
+
+        if (!username) {
+            res.status(401).json({ message: "Unauthorized user" });
+            return;
+        }
+
         const skip = (page - 1) * limit;
 
         const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
@@ -42,9 +55,13 @@ router.post('/tasks', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/tasks-history', async (req: Request, res: Response) => {
+router.get('/tasks-history', async (req: AuthRequest, res: Response) => {
     try {
-        const { username, teamNumber, page = 1, limit = TASKS_LIMIT } = req.body;
+        const username = req.user?.username;
+        const teamNumber = req.user?.teamNumber;
+
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || TASKS_LIMIT;
         const skip = (page - 1) * limit;
 
         const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
@@ -75,9 +92,13 @@ router.post('/tasks-history', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/user-tasks', async (req: Request, res: Response) => {
+router.get('/user-tasks', async (req: AuthRequest, res: Response) => {
     try {
-        const { username, teamNumber, page = 1, limit = TASKS_LIMIT } = req.body;
+        const username = req.user?.username;
+        const teamNumber = req.user?.teamNumber;
+
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || TASKS_LIMIT;
         const skip = (page - 1) * limit;
 
         const query = { userRelated: username, teamNumber: teamNumber };
@@ -96,22 +117,25 @@ router.post('/user-tasks', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/add-task', async (req: Request, res: Response) => {
-    const { tName, tDes, tUserRelated, tUserCreator, isPrivate } = req.body;
+router.post('/add-task', async (req: AuthRequest, res: Response) => {
+    const creatorUsername = req.user?.username;
+    const creatorRole = req.user?.role;
+    const creatorTeam = req.user?.teamNumber;
+    
+    const { tName, tDes, tUserRelated, isPrivate } = req.body;
 
     const assignee = await User.findOne({ username: tUserRelated });
-    const creator = await User.findOne({ username: tUserCreator });
 
-    if (!tName || !assignee || !creator) {
+    if (!tName || !assignee || !creatorUsername) {
         res.json({ isAdded: false, message: "Invalid data or user not found." });
         return;
     }
 
     let targetTeam: number;
 
-    if (creator.role === 'admin') {
+    if (creatorRole === 'admin') {
         targetTeam = assignee.teamNumber; 
-    } else if (assignee.teamNumber === creator.teamNumber) {
+    } else if (assignee.teamNumber === creatorTeam) {
         targetTeam = assignee.teamNumber; 
     } else {
         res.json({ isAdded: false, message: "You can only assign tasks to users from your teams." });
@@ -153,9 +177,17 @@ router.post('/add-task', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/end-task', async (req: Request, res: Response) => {
-    const { tID, username } = req.body;
+router.post('/end-task', async (req: AuthRequest, res: Response) => {
+    const username = req.user?.username; 
+
+    const { tID } = req.body; 
     const reqTask = await Task.findOne({ id: tID }, { _id: 0, __v: 0 });
+
+    const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
+    if (!userGroup) {
+        res.status(400).json({ error: "User not found" });
+        return;
+    }
     
     if(reqTask) {
         await TasksHistory.create({

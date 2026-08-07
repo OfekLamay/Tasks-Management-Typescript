@@ -7,8 +7,15 @@ import Tasks from './components/Tasks';
 import NewTask from './components/NewTask';
 import NotFound from './components/NotFound';
 import Users from './components/Users';
+import { useAuth } from './hooks/useAuth'; 
 
 const App: React.FC = () => {
+  const { isVerifying } = useAuth();
+
+  if (isVerifying) {
+    return <div className="loading-screen">Loading application...</div>;
+  }
+  
   return (
     <div className="App">
       <Routes>

@@ -1,30 +1,81 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../Models/User';
 import logger from '../logger';
 
 const router = express.Router();
-
 const USERS_LIMIT = 5;
 
 router.post('/login', async (req: Request, res: Response) => {
-    const uDetails = req.body;
-    const user = await User.findOne({ username: uDetails.uName });
-    let result;
-    
-    if (user && user.password && await bcrypt.compare(uDetails.uPass, user.password)) {
-        result = { isLogin: true, message: "User login", role: user.role || 'user', teamNumber: user.teamNumber };
-    } else {
-        result = { isLogin: false, message: "Wrong credentials" };
+    try {
+        const { uName, uPass } = req.body;
+        const user = await User.findOne({ username: uName });
+        
+        if (user && user.password && await bcrypt.compare(uPass, user.password)) {
+            // Create JWT payload with essential user info
+            const payload = {
+                username: user.username,
+                role: user.role || 'user',
+                teamNumber: user.teamNumber
+            };
+
+            // Sign the token (valid for 1 hour)
+            const secret = process.env.JWT_SECRET || 'fallback_secret';
+            const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+
+            // Set token in HttpOnly cookie
+            res.cookie('token', token, {
+                httpOnly: true, // Prevents client-side JS from reading the cookie
+                secure: process.env.NODE_ENV === 'production', // Requires HTTPS in production
+                sameSite: 'strict', // Prevents CSRF attacks
+                maxAge: 3600000 // 1 hour in milliseconds
+            });
+
+            logger.info({ message: 'Login attempt success', username: uName });
+            
+            res.json({ 
+                isLogin: true, 
+                message: "User login successful", 
+                role: user.role || 'user', 
+                teamNumber: user.teamNumber 
+            });
+        } else {
+            logger.info({ message: 'Login attempt failure', username: uName });
+            res.status(401).json({ isLogin: false, message: "Wrong credentials" });
+        }
+    } catch (error) {
+        logger.error({ message: 'Error in login', error });
+        res.status(500).json({ error: 'Server error during login' });
+    }
+});
+
+router.get('/verify', (req: Request, res: Response) => {
+    // Get the token from cookies
+    const token = req.cookies.token;
+
+    if (!token) {
+        res.json({ isLogin: false });
+        return;
     }
 
-    logger.info({
-        message: 'Login attempt',
-        username: uDetails.uName,
-        status: result.isLogin ? 'success' : 'failure'
-    });
+    try {
+        const secret = process.env.JWT_SECRET || 'fallback_secret';
+        
+        // Check if the token is valid and not expired
+        // If the token is valid, decode it to get user info
+        const decoded = jwt.verify(token, secret) as any;
 
-    res.json(result);
+        res.json({
+            isLogin: true,
+            username: decoded.username,
+            role: decoded.role,
+            teamNumber: decoded.teamNumber
+        });
+    } catch (error) {
+        // If the token is expired or invalid, return that the user is not logged in
+        res.json({ isLogin: false });
+    }
 });
 
 router.get('/users', async (req: Request, res: Response) => {
