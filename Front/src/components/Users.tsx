@@ -32,10 +32,9 @@ const Users: React.FC = () => {
             setTotalPages(data.totalPages);
         }
       } else {
-        const res = await fetch('/api/team-users-only', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: currentUser, page: pageToFetch, limit: USERS_LIMIT })
+        const res = await fetch(`/api/team-users-only?page=${pageToFetch}&limit=${USERS_LIMIT}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
         });
         const data = await res.json();
         if (data.users) {
@@ -49,7 +48,7 @@ const Users: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, role, USERS_LIMIT]);
+  }, [role, USERS_LIMIT]);
 
   const ranOnce = useRef(false);
   useEffect(() => {

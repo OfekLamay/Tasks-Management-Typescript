@@ -27,12 +27,6 @@ router.get('/tasks', async (req: AuthRequest, res: Response) => {
 
         const skip = (page - 1) * limit;
 
-        const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
-        if (!userGroup) {
-            res.status(400).json({ error: "User not found" });
-            return;
-        }
-
         const query = {
             teamNumber: teamNumber,
             $or: [
@@ -63,12 +57,6 @@ router.get('/tasks-history', async (req: AuthRequest, res: Response) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || TASKS_LIMIT;
         const skip = (page - 1) * limit;
-
-        const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
-        if (!userGroup) {
-            res.status(400).json({ error: "User not found" });
-            return;
-        }
 
         const query = {
             teamNumber: teamNumber,

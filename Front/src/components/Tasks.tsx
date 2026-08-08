@@ -15,7 +15,6 @@ const Tasks: React.FC = () => {
   const navigate = useNavigate();
   
   const currentUser = useSelector((state: RootState) => state.user.username);
-  const teamNumber = useSelector((state: RootState) => state.user.teamNumber);
   const tasks = useSelector((state: RootState) => state.tasks);
 
   const [isLoading, setIsLoading] = useState(true);

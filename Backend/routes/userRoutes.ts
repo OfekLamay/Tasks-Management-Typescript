@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../Models/User';
 import logger from '../logger';
+import { verifyToken, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 const USERS_LIMIT = 5;
@@ -78,8 +79,16 @@ router.get('/verify', (req: Request, res: Response) => {
     }
 });
 
-router.get('/users', async (req: Request, res: Response) => {
+router.use(verifyToken);
+
+router.get('/users', async (req: AuthRequest, res: Response) => {
     try {
+        
+        if (req.user?.role !== 'admin') {
+            res.status(403).json({ error: 'Access denied. Admins only.' });
+            return;
+        }
+
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || USERS_LIMIT;
         const skip = (page - 1) * limit;
@@ -98,7 +107,7 @@ router.get('/users', async (req: Request, res: Response) => {
     }
 });
 
-router.get('/users-only', async (req: Request, res: Response) => {
+router.get('/users-only', async (req: AuthRequest, res: Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || USERS_LIMIT;
@@ -118,19 +127,20 @@ router.get('/users-only', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/team-users-only', async (req: Request, res: Response) => {
+router.get('/team-users-only', async (req: AuthRequest, res: Response) => {
     try {
-        const { username, page = 1, limit = USERS_LIMIT } = req.body;
+        const teamNumber = req.user?.teamNumber;
+        
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || USERS_LIMIT;
         const skip = (page - 1) * limit;
 
-        const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
-        
-        if (!userGroup) {
-            res.status(400).json({ error: "User not found" });
+        if (teamNumber === undefined) {
+            res.status(400).json({ error: "Invalid user token data" });
             return;
         }
 
-        const query = { teamNumber: userGroup.teamNumber };
+        const query = { teamNumber: teamNumber };
         const totalCount = await User.countDocuments(query);
         const groupUsers = await User.find(query, { password: 0, _id: 0, __v: 0 }).skip(skip).limit(limit);
         

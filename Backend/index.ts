@@ -6,7 +6,6 @@ import cookieParser from 'cookie-parser';
 import logger from './logger';
 
 import Task from './Models/Task';
-import TasksHistory from './Models/TasksHistory';
 import User from './Models/User';
 
 import userRoutes from './routes/userRoutes';

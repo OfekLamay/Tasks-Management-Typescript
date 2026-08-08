@@ -5,6 +5,8 @@ import SelectOptions from './SelectOptions';
 import { type RootState } from '../redux/store';
 import type { IUser } from '../redux/userSlice';
 
+const MAX_USERS_FETCH = 1000;
+
 const NewTask: React.FC = () => {
     const navigate = useNavigate();
     const { username: currentUser } = useSelector((state: RootState) => state.user);
@@ -22,22 +24,30 @@ const NewTask: React.FC = () => {
             return;
         }
 
-        fetch('/api/team-users-only', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, page: 1, limit: 1000 })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.users) {
-                setUsers(data.users);
-            } else {
+        const fetchTeamUsers = async () => {
+            try {
+                const response = await fetch(`/api/team-users-only?page=1&limit=${MAX_USERS_FETCH}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.users) {
+                    setUsers(data.users);
+                } else {
+                    setUsers([]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch team users:", error);
                 setUsers([]);
             }
-        });
+        };
+
+        fetchTeamUsers();
     }, [currentUser, navigate]);
 
-    const createTask = () => {
+    const createTask = async () => {
         if (currentUser === 'NotLoggedIn') {
             window.alert('Log in first!');
             navigate('/');
@@ -47,7 +57,6 @@ const NewTask: React.FC = () => {
         const taskName = (document.getElementById('name') as HTMLInputElement).value;
         const description = (document.getElementById('description') as HTMLTextAreaElement).value;
         const userRelated = (document.getElementById('selectUser') as HTMLSelectElement).value;
-
         const isPrivateTask = (document.getElementById('isPrivate') as HTMLInputElement).checked;
 
         if (!taskName || !userRelated) {
@@ -55,22 +64,28 @@ const NewTask: React.FC = () => {
             return;
         }
 
-        fetch('/api/add-task', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tName: taskName,
-                tDes: description,
-                tUserRelated: userRelated,
-                tUserCreator: currentUser,
-                isPrivate: isPrivateTask 
-            })
-        })
-        .then(response => response.json())
-        .then(res => {
+        try {
+            const response = await fetch('/api/add-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tName: taskName,
+                    tDes: description,
+                    tUserRelated: userRelated,
+                    isPrivate: isPrivateTask 
+                })
+            });
+            
+            const res = await response.json();
             alert(res.message);
-            if (res.isAdded) navigate('/tasks');
-        });
+            
+            if (res.isAdded) {
+                navigate('/tasks');
+            }
+        } catch (error) {
+            console.error("Failed to create task:", error);
+            alert("An error occurred while creating the task. Please try again.");
+        }
     };
 
     const goBack = () => navigate('/tasks');
