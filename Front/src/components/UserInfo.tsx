@@ -67,8 +67,7 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterUsername: currentUser,
-            username: user.username,
+          username: user.username,
           role: nextRole
         })
       });
@@ -93,7 +92,6 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterUsername: currentUser,
           username: user.username
         })
       });
@@ -119,7 +117,6 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterUsername: currentUser,
           username: user.username
         })
       });
@@ -143,7 +140,6 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterUsername: currentUser,
           username: user.username
         })
       });
@@ -174,7 +170,6 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterUsername: currentUser,
           username: user.username,
           teamNumber: parsed
         })

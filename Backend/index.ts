@@ -6,7 +6,7 @@ import logger from './logger';
 
 import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
-import adminRoutes from './routes/adminRoutes';
+import adminRoutes from './routes/manageRoutes';
 
 dotenv.config();
 

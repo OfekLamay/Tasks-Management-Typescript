@@ -21,7 +21,8 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
     }
 
     try {
-        const secret = process.env.JWT_SECRET || 'fallback_secret';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET is not set');
         
         // Verify the token signature and expiration
         const decoded = jwt.verify(token, secret) as any;

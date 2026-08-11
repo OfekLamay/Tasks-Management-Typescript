@@ -22,7 +22,8 @@ router.post('/login', async (req: Request, res: Response) => {
             };
 
             // Sign the token (valid for 1 hour)
-            const secret = process.env.JWT_SECRET || 'fallback_secret';
+            const secret = process.env.JWT_SECRET;
+            if (!secret) throw new Error('JWT_SECRET is not set');
             const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 
             // Set token in HttpOnly cookie
@@ -61,8 +62,9 @@ router.get('/verify', (req: Request, res: Response) => {
     }
 
     try {
-        const secret = process.env.JWT_SECRET || 'fallback_secret';
-        
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET is not set');
+
         // Check if the token is valid and not expired
         // If the token is valid, decode it to get user info
         const decoded = jwt.verify(token, secret) as any;
