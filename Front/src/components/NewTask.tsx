@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import SelectOptions from './SelectOptions';
-import { type RootState } from '../redux/store';
 import type { IUser } from '../redux/userSlice';
+import { apiFetch } from '../utils/api';
+import { useAppSelector } from '../redux/hooks';
+
 
 const MAX_USERS_FETCH = 1000;
 
 const NewTask: React.FC = () => {
     const navigate = useNavigate();
-    const { username: currentUser } = useSelector((state: RootState) => state.user);
+    const { username: currentUser } = useAppSelector((state) => state.user);
     const [users, setUsers] = useState<IUser[]>([]);
     const ranOnceRef = useRef(false);
 
@@ -26,9 +27,8 @@ const NewTask: React.FC = () => {
 
         const fetchTeamUsers = async () => {
             try {
-                const response = await fetch(`/api/team-users-only?page=1&limit=${MAX_USERS_FETCH}`, {
+                const response = await apiFetch(`/api/team-users-only?page=1&limit=${MAX_USERS_FETCH}`, {
                     method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
                 });
                 
                 const data = await response.json();
@@ -65,9 +65,8 @@ const NewTask: React.FC = () => {
         }
 
         try {
-            const response = await fetch('/api/add-task', {
+            const response = await apiFetch('/api/add-task', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tName: taskName,
                     tDes: description,

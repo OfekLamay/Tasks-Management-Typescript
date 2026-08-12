@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import TaskPreview from './TaskPreview';
 import { useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux'; 
 import { setTasks, removeTask, type ITask } from '../redux/tasksSlice';
-import { type RootState } from '../redux/store';
 import TimedModal from './TimedModal';
 import NavBar from './NavBar';
+import { apiFetch } from '../utils/api';
+import { useAppSelector, useAppDispatch } from '../redux/hooks';
+
 
 type TaskViewType = 'all' | 'user' | 'history';
 const TASKS_LIMIT = 5;
 
 const Tasks: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   
-  const currentUser = useSelector((state: RootState) => state.user.username);
-  const tasks = useSelector((state: RootState) => state.tasks);
+  const currentUser = useAppSelector((state) => state.user.username);
+  const tasks = useAppSelector((state) => state.tasks);
 
   const [isLoading, setIsLoading] = useState(true);
   const [noHistoryOpen, setNoHistoryOpen] = useState(false);
@@ -35,9 +36,8 @@ const Tasks: React.FC = () => {
     const endpoint = `${baseEndpoint}?page=${pageToFetch}&limit=${TASKS_LIMIT}`;
 
     try {
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await apiFetch(endpoint, {
+        method: 'GET'
       });
       
       const data = await response.json();

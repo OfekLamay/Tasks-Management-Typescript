@@ -1,7 +1,7 @@
 import React from 'react'
-import { useSelector } from 'react-redux';
-import { type RootState } from '../redux/store';
 import type { ITask } from '../redux/tasksSlice';
+import {apiFetch} from '../utils/api';
+import { useAppSelector } from '../redux/hooks';
 
 interface TaskInfoProps {
   show: boolean;
@@ -11,14 +11,13 @@ interface TaskInfoProps {
 }
 
 const TaskInfo: React.FC<TaskInfoProps> = (props) => {
-  const currentUser = useSelector((state: RootState) => state.user.username);
+  const currentUser = useAppSelector((state) => state.user.username);
   if (!props.show) return null;
 
   const endTask = async () => {
     if (window.confirm("Are you sure you want to end this task?")) {
-      await fetch('/api/end-task', {
+      await apiFetch('/api/end-task', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tID: props.task.id, username: currentUser })
       })
       .then(response => response.json())

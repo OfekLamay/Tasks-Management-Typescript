@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { type RootState } from '../redux/store';
 import NavBar from './NavBar';
 import UserPreview from './UserPreview';
 import { type IUser } from '../redux/userSlice';
+import { apiFetch } from '../utils/api';
+import { useAppSelector } from '../redux/hooks';
+
 
 const Users: React.FC = () => {
   const navigate = useNavigate();
-  const currentUser = useSelector((state: RootState) => state.user.username);
-  const role = useSelector((state: RootState) => state.user.role);
-  const teamNumber = useSelector((state: RootState) => state.user.teamNumber);
+  const currentUser = useAppSelector((state) => state.user.username);
+  const role = useAppSelector((state) => state.user.role);
+  const teamNumber = useAppSelector((state) => state.user.teamNumber);
 
   const [users, setUsers] = useState<IUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,7 +25,7 @@ const Users: React.FC = () => {
     setIsLoading(true);
     try {
       if (role === 'admin') {
-        const res = await fetch(`/api/users-only?page=${pageToFetch}&limit=${USERS_LIMIT}`);
+        const res = await apiFetch(`/api/users-only?page=${pageToFetch}&limit=${USERS_LIMIT}`);
         const data = await res.json();
         if (data.users) {
             setUsers(data.users);
@@ -32,9 +33,8 @@ const Users: React.FC = () => {
             setTotalPages(data.totalPages);
         }
       } else {
-        const res = await fetch(`/api/team-users-only?page=${pageToFetch}&limit=${USERS_LIMIT}`, {
+        const res = await apiFetch(`/api/team-users-only?page=${pageToFetch}&limit=${USERS_LIMIT}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
         });
         const data = await res.json();
         if (data.users) {

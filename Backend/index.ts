@@ -2,8 +2,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import logger from './logger';
+import cors from 'cors';
 
+import logger from './logger';
 import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
 import adminRoutes from './routes/manageRoutes';
@@ -12,6 +13,11 @@ dotenv.config();
 
 const app = express();
 const PORT = 3001;
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+    credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

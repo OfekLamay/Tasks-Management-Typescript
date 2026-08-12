@@ -1,14 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
 import { logout as logoutAction } from '../redux/userSlice';
 import { setTasks } from '../redux/tasksSlice';
-import { type RootState } from '../redux/store';
+import { useAppSelector, useAppDispatch } from '../redux/hooks';
 
 const NavBar: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const currentUser = useSelector((state: RootState) => state.user.username);
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector((state) => state.user.username);
 
   const handleLogout = () => {
     if (currentUser === 'NotLoggedIn') return navigate('/');

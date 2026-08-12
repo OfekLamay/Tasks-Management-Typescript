@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import Task from '../Models/Task';
 import TasksHistory from '../Models/TasksHistory';
 import User from '../Models/User';
@@ -167,9 +167,15 @@ router.post('/add-task', async (req: AuthRequest, res: Response) => {
 
 router.post('/end-task', async (req: AuthRequest, res: Response) => {
     const username = req.user?.username; 
+    const teamNumber = req.user?.teamNumber;
 
     const { tID } = req.body; 
-    const reqTask = await Task.findOne({ id: tID }, { _id: 0, __v: 0 });
+
+    const reqTask = await Task.findOne({ id: tID, teamNumber: teamNumber }, { _id: 0, __v: 0 });
+    if (!reqTask) {
+        res.status(400).json({ error: "Task not found or you don't have permission to end it." });
+        return;
+    }
 
     const userGroup = await User.findOne({ username }, { _id: 0, __v: 0, password: 0 });
     if (!userGroup) {

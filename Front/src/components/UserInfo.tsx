@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { type RootState } from '../redux/store';
 import { type IUser } from '../redux/userSlice';
+import { apiFetch } from '../utils/api';
+import { useAppSelector } from '../redux/hooks';
 
 interface UserInfoProps {
   show: boolean;
@@ -12,7 +12,7 @@ interface UserInfoProps {
 }
 
 const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRemoved }) => {
-  const { username: currentUser, role: currentRole, teamNumber: currentTeam } = useSelector((state: RootState) => state.user);
+  const { username: currentUser, role: currentRole, teamNumber: currentTeam } = useAppSelector((state) => state.user);
   const [working, setWorking] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [localRole, setLocalRole] = useState(user.role || 'user');
@@ -63,9 +63,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
     setWorking(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/manage/set-role', {
+      const res = await apiFetch('/api/manage/set-role', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user.username,
           role: nextRole
@@ -88,9 +87,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
     setWorking(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/manage/remove-user', {
+      const res = await apiFetch('/api/manage/remove-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user.username
         })
@@ -113,9 +111,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
     setWorking(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/manage/delete-user', {
+      const res = await apiFetch('/api/manage/delete-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user.username
         })
@@ -136,9 +133,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
     setWorking(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/manage/add-to-team', {
+      const res = await apiFetch('/api/manage/add-to-team', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user.username
         })
@@ -166,9 +162,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ show, user, close, onUpdated, onRem
     setWorking(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/manage/set-team', {
+      const res = await apiFetch('/api/manage/set-team', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user.username,
           teamNumber: parsed

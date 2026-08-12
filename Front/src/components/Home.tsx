@@ -1,19 +1,19 @@
 import React from 'react'
-import { useDispatch } from 'react-redux';
 import { setUser } from '../redux/userSlice';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
+import { useAppDispatch } from '../redux/hooks';
 
 
 const Home: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   // Server interactions functions ----------------------------------------------------
 
   const checkLogin = async (username: string, password: string) => {
-    const res = await fetch('/api/login', {
+    const res = await apiFetch('/api/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uName: username, uPass: password })
     }).then(r => r.json());
 

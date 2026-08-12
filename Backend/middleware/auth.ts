@@ -10,6 +10,12 @@ export interface AuthRequest extends Request {
     };
 }
 
+export interface TokenPayload {
+    username: string;
+    role: string;
+    teamNumber: number;
+}
+
 export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
     // Extract the token directly from the cookies
     const token = req.cookies.token;
@@ -25,7 +31,7 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
         if (!secret) throw new Error('JWT_SECRET is not set');
         
         // Verify the token signature and expiration
-        const decoded = jwt.verify(token, secret) as any;
+        const decoded = jwt.verify(token, secret) as TokenPayload;
         
         // Attach the decoded payload to the request object
         // This allows your routes to access req.user instead of req.body
