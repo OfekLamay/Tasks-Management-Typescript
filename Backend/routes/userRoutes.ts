@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from '../Models/User';
 import logger from '../logger';
 import { verifyToken, AuthRequest } from '../middleware/auth';
+import { type TokenPayload } from '../middleware/auth';
 
 const router = express.Router();
 const USERS_LIMIT = 5;
@@ -67,7 +68,7 @@ router.get('/verify', (req: Request, res: Response) => {
 
         // Check if the token is valid and not expired
         // If the token is valid, decode it to get user info
-        const decoded = jwt.verify(token, secret) as any;
+        const decoded = jwt.verify(token, secret) as TokenPayload;
 
         res.json({
             isLogin: true,
