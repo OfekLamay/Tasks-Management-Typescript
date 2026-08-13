@@ -54,12 +54,7 @@ const Users: React.FC = () => {
   useEffect(() => {
     if (ranOnce.current) return;
     ranOnce.current = true;
-
-    if (currentUser === 'NotLoggedIn') {
-      window.alert('Log in first!');
-      navigate('/');
-      return;
-    }
+    
     loadUsers(1);
   }, [currentUser, navigate, loadUsers]);
 

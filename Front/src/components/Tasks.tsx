@@ -64,12 +64,7 @@ const Tasks: React.FC = () => {
   useEffect(() => {
     if (ranOnceRef.current) return;
     ranOnceRef.current = true;
-
-    if (currentUser === 'NotLoggedIn') {
-      window.alert('Log in first!');
-      navigate('/');
-      return;
-    }
+    
     fetchTasks('all', 1);
   }, [currentUser, navigate, fetchTasks]);
 

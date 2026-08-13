@@ -14,16 +14,15 @@ const NewTask: React.FC = () => {
     const [users, setUsers] = useState<IUser[]>([]);
     const ranOnceRef = useRef(false);
 
+    const [taskName, setTaskName] = useState('');
+    const [description, setDescription] = useState('');
+    const [userRelated, setUserRelated] = useState('');
+    const [isPrivateTask, setIsPrivateTask] = useState(false);
+
     // Guard + fetch team users (once)
     useEffect(() => {
         if (ranOnceRef.current) return;
         ranOnceRef.current = true;
-
-        if (currentUser === 'NotLoggedIn') {
-            window.alert('Log in first!');
-            navigate('/');
-            return;
-        }
 
         const fetchTeamUsers = async () => {
             try {
@@ -35,6 +34,9 @@ const NewTask: React.FC = () => {
                 
                 if (response.ok && data.users) {
                     setUsers(data.users);
+                    if (data.users.length > 0) {
+                        setUserRelated(data.users[0].username);
+                    }
                 } else {
                     setUsers([]);
                 }
@@ -48,16 +50,6 @@ const NewTask: React.FC = () => {
     }, [currentUser, navigate]);
 
     const createTask = async () => {
-        if (currentUser === 'NotLoggedIn') {
-            window.alert('Log in first!');
-            navigate('/');
-            return;
-        }
-
-        const taskName = (document.getElementById('name') as HTMLInputElement).value;
-        const description = (document.getElementById('description') as HTMLTextAreaElement).value;
-        const userRelated = (document.getElementById('selectUser') as HTMLSelectElement).value;
-        const isPrivateTask = (document.getElementById('isPrivate') as HTMLInputElement).checked;
 
         if (!taskName || !userRelated) {
             alert('Please insert valid task name and a valid user');
@@ -95,12 +87,32 @@ const NewTask: React.FC = () => {
             <h2 style={{textAlign: 'center'}}>Add New Task</h2>
             <div className='flexboxContainerNewTask'>
               <button onClick={goBack} className='clickbtn'>Back</button>
-              <input id='name' type="text" className='inputLabel' placeholder='Task name' />
-              <textarea id='description' className='descriptionInputLabel' placeholder='Task description' />
+              <input 
+                id='name' 
+                type="text" 
+                className='inputLabel' 
+                placeholder='Task name' 
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+              />
+              
+              <textarea 
+                id='description' 
+                className='descriptionInputLabel' 
+                placeholder='Task description' 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
               <SelectOptions users={users.map(u => ({ username: u.username }))} />
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                <input type="checkbox" id="isPrivate" style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+                <input 
+                  type="checkbox" 
+                  id="isPrivate" 
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }} 
+                  checked={isPrivateTask}
+                  onChange={(e) => setIsPrivateTask(e.target.checked)}
+                />
                 <label htmlFor="isPrivate" style={{ fontSize: '1.2rem', cursor: 'pointer', color: '#168fdb', fontWeight: 'bold' }}>
                     Private Task
                 </label>
